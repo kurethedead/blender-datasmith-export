@@ -1981,8 +1981,22 @@ def collect_object_metadata(obj_name, obj_type, obj):
 		kvp = Node("KeyValueProperty", {"name": prop_name, "val": out_value, "type": out_type } )
 		metadata.push(kvp)
 		found_metadata = True
+	# Handle user specific data
+	metadata = handle_user_data(metadata, obj, obj_type, obj_name)
+	found_metadata = metadata is not None
 	if found_metadata:
 		datasmith_context["metadata"].append(metadata)
+		
+def handle_user_data(existingMetadata : Node, obj : any, obj_type : str, obj_name : str) -> Node | None:
+	metadata = existingMetadata
+	if isinstance(obj, bpy.types.Object) and isinstance(obj.data, bpy.types.Camera):
+		if metadata is None:
+			names = (obj_type, obj_name)
+			metadata = Node("MetaData", {"name": "%s_%s"%names, "reference":"%s.%s"%names } )
+		
+		kvp = Node("KeyValueProperty", {"name": "CameraShift", "val": f"{f(obj.data.shift_x)},{f(obj.data.shift_y)}", "type": "String" } )
+		metadata.push(kvp)
+	return metadata
 
 def node_value(name, value):
 	return Node(name, {'value': '{:6f}'.format(value)})
